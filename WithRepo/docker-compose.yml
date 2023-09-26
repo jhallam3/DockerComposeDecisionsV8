@@ -1,0 +1,72 @@
+version: 3.9'
+services:
+  db:
+        image: postgres:latest
+        restart: always
+        environment:
+          - POSTGRES_USER=postgres
+          - PGUSER=postgres
+          - POSTGRES_PASSWORD=postgres
+        logging:
+          options:
+            max-size: 10m
+            max-file: "3"
+        ports:
+          - '5439:5432'
+        volumes: 
+          - ./postgres-data:/var/lib/postgresql/data
+        healthcheck:
+          test: ["CMD-SHELL", "pg_isready"]
+          interval: 10s
+          timeout: 15s
+          retries: 5
+         
+  web:
+    # user: ContainerAdministrator
+    image: decisionscore/platform:latest
+    environment:
+      - DECISIONS_DATABASECONNECTSTRING=Server=db;Port=5432;Database=Decisions;User Id=postgres;Password=postgres;
+      - DECISIONS_DATABASETYPE=POSTGRES
+      - DECISIONS_FILESTORAGELOCATION=/FileStorage
+      - DECISIONS_PORTALBASEURL=http://0.0.0.0:8090
+      - LANG=en_US.UTF-8
+      - LANGUAGE=en_US:en
+      - LC_ALL=en_US.UTF-8
+    volumes: 
+          - ./filestorage:/FileStorage
+          - ./logs:/Logs
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8090:80"
+      
+  repo:
+    # user: ContainerAdministrator
+    image: decisionscore/platform:latest
+    environment:
+      - DECISIONS_DATABASECONNECTSTRING=Server=db;Port=5432;Database=Repo;User Id=postgres;Password=postgres;
+      - DECISIONS_DATABASETYPE=POSTGRES
+      - DECISIONS_SERVERTYPE=Repository
+      - DECISIONS_FILESTORAGELOCATION=/FileStorage
+      - DECISIONS_PORTALBASEURL=http://0.0.0.0:8091
+
+      - LANG=en_US.UTF-8
+      - LANGUAGE=en_US:en
+      - LC_ALL=en_US.UTF-8
+    volumes: 
+          - ./filestorage:/FileStorage
+          - ./logs:/Logs
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8091:80"
+      
+#  networks:
+#    default:
+#      external:
+#        name: nat
+
+# - "DBCONNECTION:Server=db;Database=DB51;User Id=sa;Password=Vagrant42;"
+     # - "Data:DefaultConnection:ConnectionString=Server=db,1433;Database=MusicStore;User Id=sa;Password=Vagrant42;MultipleActiveResultSets=True"
